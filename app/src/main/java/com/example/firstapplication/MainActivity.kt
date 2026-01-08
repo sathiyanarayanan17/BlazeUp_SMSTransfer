@@ -67,6 +67,19 @@ fun SMSReaderApp() {
     var showFilterDialog by remember { mutableStateOf(false) }
     var showAddProviderDialog by remember { mutableStateOf(false) }
     var newProviderName by remember { mutableStateOf("") }
+    val csvPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            val csvText = readCsvFromUri(context, uri)
+            snackbarMessage = "CSV uploaded successfully"
+            showSnackbar = true
+        } else {
+            snackbarMessage = "No file selected"
+            showSnackbar = true
+        }
+    }
+
 
     // Date range state - default to last 30 days
     val calendar = Calendar.getInstance()
@@ -224,6 +237,19 @@ fun SMSReaderApp() {
                 ) {
                     Text("Load Messages")
                 }
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedButton(
+                    onClick = {
+                        csvPickerLauncher.launch(
+                            arrayOf("text/csv", "text/comma-separated-values")
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Upload CSV")
+                }
+
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -588,4 +614,11 @@ fun shareCsvFile(context: Context, file: File) {
     context.startActivity(
         android.content.Intent.createChooser(shareIntent, "Share CSV file")
     )
+}
+fun readCsvFromUri(context: Context, uri: Uri): String {
+    return context.contentResolver
+        .openInputStream(uri)
+        ?.bufferedReader()
+        ?.use { it.readText() }
+        ?: ""
 }
